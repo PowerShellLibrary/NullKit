@@ -1,8 +1,4 @@
-# Hacker Scripts
-
-Power Shell scripts library for true **Power Users**.
-
-❗ **Use at your own risk**
+# NullKit
 
 # Installation
 Module is available on [Powershell Gallery][gallery]
