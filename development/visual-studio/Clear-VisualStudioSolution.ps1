@@ -1,4 +1,19 @@
 function Clear-VisualStudioSolution {
+    <#
+.SYNOPSIS
+Solution cleanup
+
+.DESCRIPTION
+Runs cleanup on all projects in a given directory
+
+.PARAMETER StartPath
+Start directory
+
+.EXAMPLE
+Clear-VisualStudioSolution -StartPath "C:\repo\XA\src\"
+Runs solution cleanup for all projects under "C:\repo\XA\src\"
+
+#>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, Position = 0 )]
@@ -7,7 +22,6 @@ function Clear-VisualStudioSolution {
 
     begin {
         Write-Verbose "Cmdlet Clear-VisualStudioSolution - Begin"
-        . "$PSScriptRoot\Resolve-MsBuild.ps1"
         $MSBuildCall = Resolve-MsBuild
     }
 
