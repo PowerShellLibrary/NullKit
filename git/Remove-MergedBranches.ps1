@@ -25,7 +25,7 @@ Removes all merged branches except specified branches: master, feature1
     )
 
     process {
-        . $PSScriptRoot\Get-MergedBranchces.ps1 $Branches | % {
+        Get-MergedBranchces $Branches | % {
             $branch = $_
             if ($PSCmdlet.ShouldProcess($branch)) {
                 git branch -d $branch

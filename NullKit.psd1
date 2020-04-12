@@ -1,7 +1,7 @@
 
 @{
     RootModule        = 'NullKit.psm1'
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '1.0.2'
     GUID              = '654a73f5-effe-42fc-8e75-ee439726bd26'
     Author            = 'Alan Plocieniak'
     CompanyName       = 'Alan Plocieniak'

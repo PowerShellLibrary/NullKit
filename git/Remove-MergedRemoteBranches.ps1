@@ -25,7 +25,7 @@ Removes all merged remote branches except specified branches: master, feature1
     )
 
     process {
-        . $PSScriptRoot\Get-MergedRemoteBranchces.ps1 -Branches $Branches | % {
+        Get-MergedRemoteBranchces -Branches $Branches | % {
             $i = $_.IndexOf("/")
             $origin = $_.Substring(0, $i)
             $branch = $_.Substring($i + 1)
