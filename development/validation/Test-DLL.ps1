@@ -4,57 +4,79 @@ function Test-DLL {
 Helper script for checking DLLs
 
 .DESCRIPTION
-This script does three things:
-- displays build configuration
-- displays target CPU information
-- displays informtaion about Jit Optimization
+This script displays information about every dll located in a given path
 
-.PARAMETER StartPath
-Location of the folder where your DLLs live.
+You can get information about
+- FileVersion
+- ProductVersion
+- LegalCopyright
+- BuildConfiguration
+- TargetCPU
+- JitOptimized flag
+
+.PARAMETER DllFolder
+Location of the folder with dlls.
 
 .EXAMPLE
 Test-DLL "C:\dll" -CleanHost
-Clears console and then displays information about all DLLs located in "C:\\dll"
+Clears console and then displays information about all DLLs located in "C:\dll"
 
 .EXAMPLE
 Test-DLL "C:\dll"
-Displays information about all DLLs located in "C:\\dll"
+Displays information about all DLLs located in "C:\dll"
 #>
 
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$StartPath,
+        [string]$DllFolder,
         [Parameter(Mandatory = $false)]
         [switch]$CleanHost
     )
 
     process {
-        if (!(Test-Path $StartPath)) {
+        if (!(Test-Path $DllFolder)) {
             Write-Host "Incorrect folder path:" -ForegroundColor Red
-            Write-Host "$StartPath" -ForegroundColor Red
+            Write-Host "$LogsFolder" -ForegroundColor Red
             exit
         }
-        if ($CleanHost) {
-            Clear-Host
+
+        $scriptBlock = {
+            [CmdletBinding()]
+            param([string]$DllFolder)
+
+            begin {
+                Import-Module DLLInfo
+            }
+
+            process {
+                Get-ChildItem -LiteralPath $DllFolder -Filter "*.dll" | % {
+                    Write-Host $_.FullName -ForegroundColor Yellow
+                    $versionInfo = (Get-Item $_.FullName).VersionInfo
+                    Write-Host "FileVersion   `t`t[$($versionInfo.FileVersion)]"
+                    Write-Host "ProductVersion`t`t[$($versionInfo.ProductVersion)]"
+                    Write-Host "LegalCopyright`t`t[$($versionInfo.LegalCopyright)]"
+                    $buildConfiguration = Get-BuildConfiguration $_.FullName
+                    if ($buildConfiguration -eq "Release") {
+                        Write-Host "BuildConfiguration`t[$buildConfiguration]" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "BuildConfiguration`t[$buildConfiguration]" -ForegroundColor Red
+                    }
+                    $targetCPU = Get-TargetCPU $_.FullName
+                    Write-Host "TargetCPU`t`t[$targetCPU] "
+                    $jitOptimized = Test-JitOptimized $_.FullName
+                    Write-Host "JitOptimized`t`t[$jitOptimized]"
+                    write-host ""
+                }
+            }
         }
 
-        Import-Module DLLInfo
-        Get-ChildItem $StartPath | % {
-            Write-Host $_.FullName -ForegroundColor Green
-            $versionInfo = (Get-Item $_.FullName).VersionInfo
-            $versionInfo.ProductVersion
-            $versionInfo.FileVersion
-            $versionInfo.LegalCopyright
-
-            $buildConfiguration = Get-BuildConfiguration $_.FullName
-            $targetCPU = Get-TargetCPU $_.FullName
-            $jitOptimized = Test-JitOptimized $_.FullName
-
-            Write-Host "BuildConfiguration`t [$buildConfiguration]" -ForegroundColor Yellow
-            Write-Host "TargetCPU`t`t [$targetCPU] " -ForegroundColor Yellow
-            Write-Host "JitOptimized`t`t [$jitOptimized]" -ForegroundColor Yellow
-            write-host ""
-        }
+        $tmp = New-TemporaryFile
+        $scriptBlock.ToString() | Out-File $tmp.FullName
+        $scriptFilePath = [System.IO.Path]::ChangeExtension($tmp.FullName, ".ps1")
+        $tmp | Rename-Item -NewName $tmp.Name.Replace(".tmp", ".ps1")
+        Invoke-Expression "powershell.exe $scriptFilePath `"'$DllFolder'`""
+        Remove-Item $scriptFilePath -Force
     }
 }
