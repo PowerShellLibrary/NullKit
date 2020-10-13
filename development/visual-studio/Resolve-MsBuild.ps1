@@ -1,8 +1,15 @@
+function Get-Version($pathInfo) {
+    Get-Item $pathInfo.Path `
+        | Select-Object VersionInfo `
+        | % { $_.VersionInfo.FileVersion } `
+        | % { [version]::Parse($_) }
+}
+
 function Resolve-MsBuild {
     $msb2017 = Resolve-Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio\*\*\MSBuild\*\bin\msbuild.exe" -ErrorAction SilentlyContinue
     if ($msb2017) {
         Write-Host "Found MSBuild 2017 (or later)." -ForegroundColor Green
-        return $msb2017 | Select-Object -First 1
+        return $msb2017 | Sort-Object -Property @{Expression = { Get-Version $_ } } -Descending | Select-Object -First 1
     }
 
     $msBuild2015 = "${env:ProgramFiles(x86)}\MSBuild\14.0\bin\msbuild.exe"
