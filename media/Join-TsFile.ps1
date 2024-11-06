@@ -18,6 +18,9 @@ The name of the output file. By default, this is set to "out.ts".
 .PARAMETER ChunkSize
 The number of files to process in each chunk. This helps to avoid exceeding the command line length limit when concatenating files.
 
+.PARAMETER UseFFmpeg
+Use FFMPEG to join files instead of build in copy command.
+
 .EXAMPLE
 Join-TsFile "c:\test\"
 Joins all *.ts files found in a "c:\test\" directory
@@ -39,8 +42,14 @@ If the total command length is too long for the cmd /c copy operation, reducing 
         [Parameter(Mandatory = $false, Position = 2)]
         [string]$OutFile = "out.ts",
         [Parameter(Mandatory = $false, Position = 3)]
-        [int]$ChunkSize = 1000
+        [int]$ChunkSize = 1000,
+        [Parameter(Mandatory = $false, Position = 4)]
+        [switch]$UseFFmpeg
     )
+
+    function Test-FFmpegInstalled {
+        return Get-Command ffmpeg -ErrorAction SilentlyContinue -OutVariable +Null
+    }
 
     $location = Get-Location
     try {
@@ -52,13 +61,24 @@ If the total command length is too long for the cmd /c copy operation, reducing 
             $tsFile = $Files | Select-Object -First 1
             $FilesLocation = $tsFile.Directory
         }
+
+        $fileNames = $fileNames | ? { $_ -ne $OutFile }
+
         Set-Location $FilesLocation
 
-        Copy-Item -Path $fileNames[0] -Destination $OutFile
-        for ($i = 1; $i -lt $fileNames.Count; $i += $ChunkSize) {
-            $chunk = $fileNames[$i..([math]::Min($i + $ChunkSize - 1, $fileNames.Count - 1))]
-            $concatenatedNames = $chunk -join "+"
-            cmd /c copy /b "$OutFile+$concatenatedNames" $OutFile | Out-Null
+        if ($UseFFmpeg -and (Test-FFmpegInstalled)) {
+            $tmpFilePath = Join-Path -Path (Get-Location).Path -ChildPath "_fileList.txt"
+            $fileNames | % { "file '$($_)'" } | Set-Content -Path $tmpFilePath
+            ffmpeg -f concat -safe 0 -i $tmpFilePath -c copy $OutFile -loglevel quiet
+            Remove-Item -Path $tmpFilePath
+        }
+        else {
+            Copy-Item -Path $fileNames[0] -Destination $OutFile
+            for ($i = 1; $i -lt $fileNames.Count; $i += $ChunkSize) {
+                $chunk = $fileNames[$i..([math]::Min($i + $ChunkSize - 1, $fileNames.Count - 1))]
+                $concatenatedNames = $chunk -join "+"
+                cmd /c copy /b "$OutFile+$concatenatedNames" $OutFile | Out-Null
+            }
         }
     }
     finally {
