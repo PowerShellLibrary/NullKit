@@ -92,10 +92,10 @@ Runs solution cleanup for all projects under "C:\repo\XA\src\"
         Write-Verbose "Cmdlet Clear-VisualStudioSolutionFolder - Process"
         Get-FoldersToRemove $StartPath | % {
             if ($Confirm) {
-                Remove-Item -Path $_.FullName -Recurse -Confirm
+                Remove-Item -Path $_.FullName -Recurse -Confirm -Force
             }
             else {
-                Remove-Item -Path $_.FullName -Recurse
+                Remove-Item -Path $_.FullName -Recurse -Force
             }
         }
     }
